@@ -1,0 +1,6 @@
+sentence-transformers
+nltk
+transformers
+qdrant_client
+torch
+python-dotenv
