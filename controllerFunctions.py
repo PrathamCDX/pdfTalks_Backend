@@ -205,6 +205,7 @@ async def convert_pdf_to_text_copilot(pdf_file):
 async def convert_pdf_to_text_large(pdf_file: UploadFile):
     temp_path = None
     try:
+        pdf_file.file.seek(0)
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
             temp_path = tmp.name
@@ -232,3 +233,59 @@ async def convert_pdf_to_text_large(pdf_file: UploadFile):
             os.unlink(temp_path)
         # Reset the file pointer if needed
         await pdf_file.seek(0)
+        
+        
+        
+
+from supabase import create_client, Client
+def upload_pdf_to_supabase(
+    supabase: Client,
+    file, 
+    bucket_name: str = "pdfs", 
+    file_name: str = None,
+    content_type: str = "application/pdf"
+):
+    
+    try:
+        if not file_name:
+            raise ValueError("file_name parameter is required when uploading a file object")
+        
+        # Read the file data
+        file_data = file.read()
+        
+        # Upload to Supabase Storage
+        res = supabase.storage.from_(bucket_name).upload(
+            path=file_name,
+            file=file_data,
+            file_options={"content-type": content_type}
+        )
+        
+        print(f"Successfully uploaded {file_name} to {bucket_name} bucket")
+        
+        # Return public URL (requires proper bucket policies)
+        return supabase.storage.from_(bucket_name).get_public_url(file_name)
+    
+    except Exception as e:
+        print(f"Error uploading file: {e}")
+        return None
+      
+def trim_pdf_extension(filename):
+    if filename.lower().endswith('.pdf'):
+        return filename[:-4]
+    return filename
+  
+def chunk_text_with_overlap(text, chunk_size=500, overlap_size=250):
+    
+    chunks = []
+    start = 0
+    end = chunk_size
+    
+    while start < len(text):
+        chunk = text[start:end]
+        chunks.append(chunk)
+        
+        # Move the window forward (chunk_size - overlap_size)
+        start += (chunk_size - overlap_size)
+        end = start + chunk_size
+    
+    return chunks

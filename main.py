@@ -3,7 +3,7 @@ from qdrant_client import QdrantClient
 from fastapi import FastAPI
 from pydantic import BaseModel
 from controllerFunctions import *
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import JSONResponse
 
 import os
@@ -54,13 +54,23 @@ print(qdrant_client.get_collections())
 print(os.getcwd()) 
 
 
+# supabase connection 
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
+
+from supabase import create_client, Client
+
+url: str = supabase_url
+key: str = supabase_key
+supabase: Client = create_client(url, key)
+
 class PredictRequest(BaseModel):
     foo: str | None = None
     info : str | None = "N0 one"
     num : int | None = 0
   
 
-@app.post("/")
+@app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI!"}
 
@@ -74,20 +84,60 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
         
+from datetime import date
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), collection_name: Optional[str] = "test_collection_2"):
-    
+async def upload_file( fingerprint: str = Form(...), activeProjectId: str= Form(...), file: UploadFile = File(...), collection_name: Optional[str] = Form("test_collection_2")):
 
     try:
-        print("upload_file")
-        context_text =await convert_pdf_to_text_large(file)
-        sentences = get_sentence_array(context_text)
-        embeddings =await generate_embeddings(sentences)
-        op_info =await  insert_embeddings(embeddings, sentences, qdrant_client, collection_name)
-        print("embeddings : ")
-        print(len(embeddings[0]))
-        print(op_info)
+        # if(activeProjectId=="null") :
+        #     activeProjectId = str(uuid.uuid4())   
+        print("activeProjectId : ")
+        print(activeProjectId)
+        # return None
         
+        print("upload_file : ")
+        print(file.filename)
+        
+        public_url = upload_pdf_to_supabase(
+            supabase=supabase,
+            file=file.file,
+            file_name=activeProjectId
+        )
+        print("public_url : ")
+        print(public_url)
+        
+        
+        today = date.today()
+        response = (
+            supabase.table("Demo")
+            .insert({"fingerprint": fingerprint,"title" :trim_pdf_extension( file.filename) , "fileName" : file.filename, "uploadDate" : today.isoformat(), "fileUrl" : public_url, "id": activeProjectId})
+            .execute()
+        )
+        
+        print("response : ")
+        print(response)
+        # return None
+        context_text =await convert_pdf_to_text_large(file)
+        print("sentence array ")
+        print("-"*20)
+        sentences = get_sentence_array(context_text)
+        print("paragraph array ")
+        print("-"*20)
+        para_chunks = chunk_text_with_overlap(context_text)
+        print("sentence embeddings")
+        print("-"*20)
+        sentences_embeddings =await generate_embeddings(sentences)
+        print("paragraph embeddings ")
+        print("-"*20)
+        para_chunks_embeddings =await generate_embeddings(para_chunks)
+        print("done")
+        op_info_sentences =await  insert_embeddings(sentences_embeddings, sentences, qdrant_client, activeProjectId)
+        op_info_para_chunks =await  insert_embeddings(para_chunks_embeddings, para_chunks, qdrant_client, activeProjectId)
+        print("embeddings : ")
+        print(len(sentences_embeddings[0]))
+        print(op_info_sentences)
+        print(op_info_para_chunks)
+
         return JSONResponse(content={"filename": file.filename, "file": "file"})
     except Exception as e:
         print(f"Error: {e}")
@@ -98,12 +148,14 @@ async def upload_file(file: UploadFile = File(...), collection_name: Optional[st
     
 class getanswer(BaseModel):
     question: str | None =" "
-    collection_name: str | None = "test_collection"
-    limit: int | None = 3
+    collection_name: str | None = "test_collection_2"
+    limit: int | None = 100  
     
 @app.post('/getanswer')
 async def get_answer(request: getanswer):
     print("getanswer called")
+    print(request.collection_name)
+    # return None
     try:
         print("getans")
         question = request.question
