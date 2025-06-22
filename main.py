@@ -110,7 +110,7 @@ async def upload_file( fingerprint: str = Form(...), activeProjectId: str= Form(
         today = date.today()
         response = (
             supabase.table("Demo")
-            .insert({"fingerprint": fingerprint,"title" :trim_pdf_extension( file.filename) , "fileName" : file.filename, "uploadDate" : today.isoformat(), "fileUrl" : public_url, "id": activeProjectId})
+            .insert({"fingerprint": fingerprint,"title" :trim_pdf_extension( file.filename) , "fileName" : file.filename, "uploadDate" : today.isoformat(), "fileUrl" : public_url, "id": activeProjectId, "chats" : []})
             .execute()
         )
         
@@ -167,6 +167,62 @@ async def get_answer(request: getanswer):
         answer = llm_response(question, context)
         print(answer['answer'])
         return JSONResponse(content= {"answer" : answer['answer']}, status_code=200)
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post('/getchat')
+async def getChat (id:str = Form(...)):
+    try:
+        print("getChat called")
+        print(id)
+        response = (
+            supabase.table("Demo")
+            .select("chats")
+            .eq("id", id)
+            .execute()
+        )
+        print(response.data)
+        return JSONResponse(content=response.data, status_code=200)     
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+    
+import json
+@app.post('/updatechat')
+async def updateChat(id: str = Form(...), chats: str = Form(...)):
+    try:
+        print("updateChat called")
+        print(id)
+        # print(chat)
+        response = (
+            supabase.table("Demo")
+            .update({"chats": json.loads(chats)})
+            .eq("id", id)
+            .execute()
+        )
+        print(response.data)
+        return JSONResponse(content={"message": "Chat updated successfully"}, status_code=200) 
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+    
+@app.post('/getprojects')
+async def getProjects(fingerprint: str = Form(...)):
+    try:
+        print("getProjects called")
+        print(fingerprint)
+        response = (
+            supabase.table("Demo")
+            .select("id,title, fileName, uploadDate, fileUrl")
+            .eq("fingerprint", fingerprint)
+            .execute()
+        )
+        print(response.data)
+        return JSONResponse(content=response.data, status_code=200)     
     except Exception as e:
         print(f"Error: {e}")
         traceback.print_exc()

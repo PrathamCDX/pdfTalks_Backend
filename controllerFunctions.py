@@ -1,3 +1,5 @@
+
+from supabase import create_client, Client
 from qdrant_client import AsyncQdrantClient  
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_client import QdrantClient
@@ -236,8 +238,6 @@ async def convert_pdf_to_text_large(pdf_file: UploadFile):
         
         
         
-
-from supabase import create_client, Client
 def upload_pdf_to_supabase(
     supabase: Client,
     file, 
