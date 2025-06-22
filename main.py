@@ -86,7 +86,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
         
 from datetime import date
 @app.post("/upload")
-async def upload_file( fingerprint: str = Form(...), activeProjectId: str= Form(...), file: UploadFile = File(...), collection_name: Optional[str] = Form("test_collection_2")):
+async def upload_file(googleAuth: str = Form(...), activeProjectId: str= Form(...), file: UploadFile = File(...), collection_name: Optional[str] = Form("test_collection_2")):
 
     try:
         # if(activeProjectId=="null") :
@@ -110,7 +110,7 @@ async def upload_file( fingerprint: str = Form(...), activeProjectId: str= Form(
         today = date.today()
         response = (
             supabase.table("Demo")
-            .insert({"fingerprint": fingerprint,"title" :trim_pdf_extension( file.filename) , "fileName" : file.filename, "uploadDate" : today.isoformat(), "fileUrl" : public_url, "id": activeProjectId, "chats" : []})
+            .insert({"googleAuth": googleAuth,"title" :trim_pdf_extension( file.filename) , "fileName" : file.filename, "uploadDate" : today.isoformat(), "fileUrl" : public_url, "id": activeProjectId, "chats" : []})
             .execute()
         )
         
@@ -211,14 +211,14 @@ async def updateChat(id: str = Form(...), chats: str = Form(...)):
         return JSONResponse(content={"error": str(e)}, status_code=500)
     
 @app.post('/getprojects')
-async def getProjects(fingerprint: str = Form(...)):
+async def getProjects(googleAuth: str = Form(...)):
     try:
         print("getProjects called")
-        print(fingerprint)
+        print(googleAuth)
         response = (
             supabase.table("Demo")
             .select("id,title, fileName, uploadDate, fileUrl")
-            .eq("fingerprint", fingerprint)
+            .eq("googleAuth", googleAuth)
             .execute()
         )
         print(response.data)
