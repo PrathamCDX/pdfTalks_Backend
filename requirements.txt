@@ -4,3 +4,10 @@ transformers
 qdrant_client
 torch
 python-dotenv
+fastapi
+uvicorn
+PyPDF2
+python-multipart
+supabase-py
+pydantic
+pdfplumber
