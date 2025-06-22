@@ -8,6 +8,6 @@ fastapi
 uvicorn
 PyPDF2
 python-multipart
-supabase-py
+supabase
 pydantic
 pdfplumber
