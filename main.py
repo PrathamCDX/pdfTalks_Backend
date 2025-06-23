@@ -7,13 +7,7 @@ from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import JSONResponse
 
 import os
-import uuid
-import shutil
 from typing import Optional
-import uvicorn
-import PyPDF2
-import io
-
 from dotenv import load_dotenv, find_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -49,9 +43,11 @@ qdrant_client = QdrantClient(
     
 )
 print("Qdrant client initialized")
-print(type(qdrant_client))
-print(qdrant_client.get_collections())
-print(os.getcwd()) 
+# print(type(qdrant_client))
+# print(qdrant_client.get_collections())
+# print(os.getcwd()) 
+
+print_memory_usage()
 
 
 # supabase connection 
