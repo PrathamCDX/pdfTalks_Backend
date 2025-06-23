@@ -11,3 +11,4 @@ torch
 supabase
 pydantic
 python-multipart
+psutil
